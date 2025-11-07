@@ -13,8 +13,8 @@ interface ScrollMetrics {
 export class ChatScrollManager {
     // Configuration (in fractional screen height units)
     private readonly minRowPx = 78;
-    private readonly minBufferSize = 1;
-    private readonly continuationStepBack = 1;
+    private readonly minBufferSize = 0.75;
+    private readonly continuationStepBack = .75;
     private readonly querySize = 3.0;
 
     // Reactive state
@@ -40,6 +40,7 @@ export class ChatScrollManager {
     private paused = false;
     private lastScrollTop: number = 0;
     private userScrolling = false;
+    private hitBeginning = false; // Hit oldest messages
     private initialized = false;
     private container: HTMLDivElement | null = null;
     private scrollHandler: (() => void) | null = null;
@@ -162,23 +163,51 @@ export class ChatScrollManager {
         const { stepBack } = this.getThresholds();
         const isBackward = direction === 'backward';
 
-        // Accumulate heights from edge until >= stepBack
-        const start = isBackward ? messageList.length - 1 : 0;
-        const end = isBackward ? -1 : messageList.length;
-        const step = isBackward ? -1 : 1;
+        if (isBackward) {
+            // Step back from bottom of newest message
+            const startEl = this.container.querySelector(`[data-msg-id="${messageList[messageList.length - 1].id.to_base64()}"]`) as HTMLElement;
+            if (!startEl) return null;
+            const targetPos = startEl.offsetTop + startEl.offsetHeight - stepBack;
 
-        let accumulated = 0;
-        for (let i = start; i !== end; i += step) {
-            const msg = messageList[i];
+            for (let i = messageList.length - 1; i >= 0; i--) {
+                const msg = messageList[i];
+                const el = this.container.querySelector(`[data-msg-id="${msg.id.to_base64()}"]`) as HTMLElement;
+                if (!el) continue;
+
+                if (el.offsetTop + el.offsetHeight <= targetPos) {
+                    console.log('getContinuationAnchor backward:', { index: i, total: messageList.length, timestamp: msg.timestamp });
+                    return { el, msg };
+                }
+            }
+            // Fallback: return oldest message if nothing found
+            const msg = messageList[0];
             const el = this.container.querySelector(`[data-msg-id="${msg.id.to_base64()}"]`) as HTMLElement;
+            if (el) {
+                console.log('getContinuationAnchor backward (fallback to oldest):', { index: 0, total: messageList.length });
+                return { el, msg };
+            }
+        } else {
+            // Step forward from top of oldest message
+            const startEl = this.container.querySelector(`[data-msg-id="${messageList[0].id.to_base64()}"]`) as HTMLElement;
+            if (!startEl) return null;
+            const targetPos = startEl.offsetTop + stepBack;
 
-            const height = el ? el.offsetHeight : this.minRowPx;
-            accumulated += height;
+            for (let i = 0; i < messageList.length; i++) {
+                const msg = messageList[i];
+                const el = this.container.querySelector(`[data-msg-id="${msg.id.to_base64()}"]`) as HTMLElement;
+                if (!el) continue;
 
-            // Always take at least first message, then stop when we exceed stepBack
-            if (i === start || accumulated >= stepBack) {
-                console.log(`getContinuationAnchor ${direction}:`, { index: i, total: messageList.length, accumulated, stepBack, timestamp: msg.timestamp });
-                return el ? { el, msg } : null;
+                if (el.offsetTop >= targetPos) {
+                    console.log('getContinuationAnchor forward:', { index: i, total: messageList.length, timestamp: msg.timestamp });
+                    return { el, msg };
+                }
+            }
+            // Fallback: return newest message if nothing found
+            const msg = messageList[messageList.length - 1];
+            const el = this.container.querySelector(`[data-msg-id="${msg.id.to_base64()}"]`) as HTMLElement;
+            if (el) {
+                console.log('getContinuationAnchor forward (fallback to newest):', { index: messageList.length - 1, total: messageList.length });
+                return { el, msg };
             }
         }
         return null;
@@ -190,9 +219,11 @@ export class ChatScrollManager {
 
         // Guards before setting loading flag
         if (loadingFlag.peek()) return;
+        if (isBackward && this.hitBeginning) return; // Don't load backward if we've hit the beginning
+
         const messageList = this.items;
         if (messageList.length === 0 || !this.container) {
-            this.setLiveMode();
+            await this.setLiveMode();
             return;
         }
         const anchorData = this.getContinuationAnchor(direction, messageList);
@@ -234,11 +265,20 @@ export class ChatScrollManager {
             after: { earliest: earliestAfter, latest: latestAfter, count: afterList.length }
         });
 
-        // If forward hit end, switch to live
-        if (!isBackward && (this.messages.resultset.items?.length || 0) < limit) {
-            this.setLiveMode();
+        // Check if we hit the boundaries
+        const resultCount = this.messages.resultset.items?.length || 0;
+        if (isBackward && resultCount < limit) {
+            // Hit the beginning (oldest messages)
+            this.hitBeginning = true;
+            console.log('→ Hit beginning (oldest messages)');
+        } else if (!isBackward && resultCount < limit) {
+            // Hit the end (newest messages), switch to live
+            await this.setLiveMode();
             loadingFlag.set(false);
             return;
+        } else if (!isBackward) {
+            // Loading forward successfully - clear beginning flag
+            this.hitBeginning = false;
         }
 
         const { y: yAfter } = offsetToParent(el) || { y: 0 };
@@ -247,9 +287,6 @@ export class ChatScrollManager {
 
         this.scrollTo(this.container.scrollTop + delta);
         loadingFlag.set(false);
-
-        // Check if we need to load more (still within buffer after load)
-        requestAnimationFrame(() => this.checkBuffers());
     }
 
     private checkBuffers() {
@@ -270,13 +307,15 @@ export class ChatScrollManager {
         }
     }
 
-    setLiveMode() {
+    async setLiveMode() {
+        console.log('→ setLiveMode');
         this.modeMut.set('live');
         this.lastContinuationKey = null;
+        this.hitBeginning = false;
         this.loadingBackwardMut.set(false);
         this.loadingForwardMut.set(false);
-        this.messages.updateSelection(`room = ? ORDER BY timestamp DESC LIMIT ${this.computeLimit()}`, this.roomId);
-        this.scrollToBottom();
+        await this.messages.updateSelection(`room = ? ORDER BY timestamp DESC LIMIT ${this.computeLimit()}`, this.roomId);
+        // afterLayout() will handle scrolling once DOM updates
     }
 
     private onUserScroll() {
