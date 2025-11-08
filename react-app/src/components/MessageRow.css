@@ -4,7 +4,31 @@
   border-radius: 8px;
   max-width: 70%;
   word-wrap: break-word;
-  transition: background-color 0.3s ease;
+  cursor: context-menu;
+  align-self: flex-start;
+}
+
+.messageBubble.ownMessage {
+  background-color: #bee3f8;
+  color: #1a202c;
+  align-self: flex-end;
+  margin-left: auto;
+}
+
+.messageBubble.ownMessage .messageText {
+  color: #1a202c;
+}
+
+.messageBubble.ownMessage.editing {
+  background-color: #81e6d9;
+  border: 2px solid #38b2ac;
+  box-shadow: 0 0 8px rgba(56, 178, 172, 0.4);
+}
+
+.messageBubble.editing {
+  background-color: #e6fffa;
+  border: 2px solid #38b2ac;
+  box-shadow: 0 0 8px rgba(56, 178, 172, 0.4);
 }
 
 .messageBubble.highlighted {
@@ -17,6 +41,12 @@
   background-color: #ebf8ff;
   border: 2px solid #4299e1;
   box-shadow: 0 0 8px rgba(66, 153, 225, 0.3);
+}
+
+.messageBubble.editing {
+  background-color: #e6fffa;
+  border: 2px solid #38b2ac;
+  box-shadow: 0 0 8px rgba(56, 178, 172, 0.4);
 }
 
 .messageHeader {
@@ -41,5 +71,25 @@
   color: #1a202c;
   font-size: 15px;
   line-height: 1.4;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .messageBubble {
+    padding: 10px 12px;
+    max-width: 85%;
+  }
+
+  .messageAuthor {
+    font-size: 13px;
+  }
+
+  .messageTime {
+    font-size: 11px;
+  }
+
+  .messageText {
+    font-size: 14px;
+  }
 }
 

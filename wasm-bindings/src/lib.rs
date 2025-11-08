@@ -9,6 +9,7 @@ use once_cell::sync::OnceCell;
 use send_wrapper::SendWrapper;
 use tracing::error;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use web_sys::window;
 
 pub use ankurah_template_model::*;
 
@@ -35,7 +36,16 @@ pub async fn start() -> Result<(), JsValue> {
         .await
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
     let node = Node::new(Arc::new(storage_engine), PermissiveAgent::new());
-    let connector = WebsocketClient::new(node.clone(), "ws://127.0.0.1:9797")?;
+
+    // Build WebSocket URL based on current window location
+    let window = window().ok_or_else(|| JsValue::from_str("No window available"))?;
+    let location = window.location();
+    let hostname = location
+        .hostname()
+        .map_err(|e| JsValue::from_str(&format!("Failed to get hostname: {:?}", e)))?;
+    let ws_url = format!("ws://{}:9797", hostname);
+
+    let connector = WebsocketClient::new(node.clone(), &ws_url)?;
     node.system.wait_system_ready().await;
     if let Err(_) = NODE.set(node) {
         error!("Failed to set node");

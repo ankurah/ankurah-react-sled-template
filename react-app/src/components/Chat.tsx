@@ -1,16 +1,19 @@
-import { useMemo, useEffect, useLayoutEffect } from "react";
+import { useMemo, useEffect } from "react";
 import {
     User,
     ctx,
     JsValueRead,
+    JsValueMut,
     RoomView,
     UserView,
+    MessageView,
 } from "ankurah-template-wasm-bindings";
 import { MessageRow } from "./MessageRow";
 import { MessageInput } from "./MessageInput";
 import { ChatDebugHeader } from "./ChatDebugHeader";
 import { signalObserver } from "../utils";
 import { ChatScrollManager } from "../ChatScrollManager";
+import { useDebugMode } from "../hooks/useDebugMode";
 import "./Chat.css";
 
 interface ChatProps {
@@ -21,6 +24,12 @@ interface ChatProps {
 export const Chat: React.FC<ChatProps> = signalObserver(({ room, currentUser }) => {
     const currentRoom = room.get();
     const user = currentUser.get();
+
+    const { showDebug, toggleDebug } = useDebugMode();
+
+    // State for editing messages
+    const editingMessageMut = useMemo(() => new JsValueMut<MessageView | null>(null), []);
+    const editingMessage = editingMessageMut.get();
 
     // Create scroll manager when room changes
     const manager = useMemo(() => {
@@ -33,13 +42,11 @@ export const Chat: React.FC<ChatProps> = signalObserver(({ room, currentUser }) 
 
     // Access messages directly for observer tracking
     const messageList = manager?.items || [];
-    const showJumpToCurrent = manager?.mode.get() !== 'live';
+    const showJumpToCurrent = manager ? !manager.shouldAutoScroll : false;
+    const currentUserId = user?.id.to_base64() || null;
 
     // Cleanup on unmount or room change
     useEffect(() => () => manager?.destroy(), [manager]);
-
-    // Handle initialization and autoscroll in live mode
-    useLayoutEffect(() => manager?.afterLayout());
 
     if (!currentRoom) {
         return (
@@ -51,7 +58,18 @@ export const Chat: React.FC<ChatProps> = signalObserver(({ room, currentUser }) 
 
     return (
         <div className="chatContainer">
-            {manager && <ChatDebugHeader manager={manager} />}
+            {manager && showDebug && <ChatDebugHeader manager={manager} />}
+
+            {manager && (
+                <button
+                    className="debugToggle"
+                    onClick={toggleDebug}
+                    title={showDebug ? "Hide debug info" : "Show debug info"}
+                    style={{ opacity: 0.35 }}
+                >
+                    {showDebug ? "▼" : "▲"}
+                </button>
+            )}
 
             <div className="messagesContainer" ref={manager?.bindContainer}>
                 {messageList.length === 0 ? (
@@ -62,6 +80,9 @@ export const Chat: React.FC<ChatProps> = signalObserver(({ room, currentUser }) 
                             key={message.id.toString()}
                             message={message}
                             users={users}
+                            currentUserId={currentUserId}
+                            editingMessage={editingMessage}
+                            editingMessageMut={editingMessageMut}
                         />
                     ))
                 )}
@@ -70,13 +91,18 @@ export const Chat: React.FC<ChatProps> = signalObserver(({ room, currentUser }) 
             {showJumpToCurrent && (
                 <button
                     className="jumpToCurrent"
-                    onClick={() => manager?.setLiveMode()}
+                    onClick={() => manager?.jumpToLive()}
                 >
                     Jump to Current ↓
                 </button>
             )}
 
-            <MessageInput room={currentRoom} currentUser={user} />
+            <MessageInput
+                room={currentRoom}
+                currentUser={user}
+                editingMessageMut={editingMessageMut}
+                manager={manager}
+            />
         </div>
     );
 });

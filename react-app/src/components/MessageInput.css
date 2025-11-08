@@ -14,6 +14,7 @@
   border-radius: 8px;
   font-size: 15px;
   outline: none;
+  min-width: 0;
 }
 
 .input:focus {
@@ -40,5 +41,23 @@
 .button:disabled {
   background-color: #a0aec0;
   cursor: not-allowed;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .inputContainer {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .input {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .button {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
 }
 

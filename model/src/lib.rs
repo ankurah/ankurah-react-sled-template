@@ -20,4 +20,6 @@ pub struct Message {
     pub room: String,
     pub text: String,
     pub timestamp: i64,
+    #[active_type(LWW)]
+    pub deleted: bool,
 }

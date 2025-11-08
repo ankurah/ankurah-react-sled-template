@@ -1,4 +1,4 @@
-import { Message, MessageView, MessageLiveQuery, ctx, JsValueMut } from "ankurah-template-wasm-bindings";
+import { Message, MessageView, MessageLiveQuery, ctx, JsValueMut, SubscriptionGuard } from "ankurah-template-wasm-bindings";
 
 type ScrollMode = 'live' | 'backward' | 'forward';
 
@@ -12,20 +12,23 @@ interface ScrollMetrics {
 
 export class ChatScrollManager {
     // Configuration (in fractional screen height units)
-    private readonly minRowPx = 78;
-    private readonly minBufferSize = 0.75;
+    private readonly minRowPx = 74;
+    private readonly minBufferSize = 0.75;  // Trigger threshold: load when within 0.75 viewports of edge
     private readonly continuationStepBack = .75;
-    private readonly querySize = 3.0;
+    private readonly querySize = 3.0;       // Load 3.0 viewports worth of content
+
+    // Safety margin: querySize / minBufferSize = 3.0 / 0.75 = 4.0
+    // This means we load 4x as much content as the trigger threshold.
+    // Even if a loadMore returns zero ADDITIONAL records (resultCount == limit but all overlap),
+    // we still have (querySize - minBufferSize) = 2.25 viewports of buffer remaining,
+    // which is 3x the trigger threshold - plenty of cushion to avoid gaps.
 
     // Reactive state
     private modeMut = new JsValueMut<ScrollMode>('live');
     public readonly mode = this.modeMut.read();
 
-    private loadingBackwardMut = new JsValueMut(false);
-    public readonly loadingBackward = this.loadingBackwardMut.read();
-
-    private loadingForwardMut = new JsValueMut(false);
-    public readonly loadingForward = this.loadingForwardMut.read();
+    private loadingMut = new JsValueMut<'forward' | 'backward' | false>(false);
+    public readonly loading = this.loadingMut.read();
 
     private metricsMut = new JsValueMut<ScrollMetrics>({
         topGap: 0,
@@ -37,20 +40,96 @@ export class ChatScrollManager {
     public readonly metrics = this.metricsMut.read();
     public readonly messages: MessageLiveQuery;
     private lastContinuationKey: string | null = null;
-    private paused = false;
     private lastScrollTop: number = 0;
     private userScrolling = false;
-    private hitBeginning = false; // Hit oldest messages
     private initialized = false;
     private container: HTMLDivElement | null = null;
     private scrollHandler: (() => void) | null = null;
     private wheelHandler: (() => void) | null = null;
     private touchStartHandler: (() => void) | null = null;
 
+    // Track the actual query parameters used (reactive for boundary detection)
+    private currentLimitMut = new JsValueMut<number>(0);
+    private currentDirectionMut = new JsValueMut<'ASC' | 'DESC'>('DESC');
+    private _guard: SubscriptionGuard | null = null;
+
     constructor(private roomId: string) {
         const limit = this.computeLimit();
-        this.messages = Message.query(ctx(), `room = ? ORDER BY timestamp DESC LIMIT ${limit}`, roomId);
+        this.currentLimitMut.set(limit);
+        this.currentDirectionMut.set('DESC');
+        this.messages = Message.query(ctx(), ...this.liveModeSelection(limit));
 
+        // Subscribe to message changes
+        this._guard = this.messages.subscribe(() => {
+            // we seem to be getting called before the observer, which figures,
+            // because we're registering the subscription before the observer does
+            setTimeout(() => this.afterLayout(), 0);
+        });
+    }
+
+    private liveModeSelection(limit: number): [string, string] {
+        return [`room = ? AND deleted = false ORDER BY timestamp DESC LIMIT ${limit}`, this.roomId];
+    }
+
+    async setLiveMode() {
+        console.log('→ setLiveMode');
+        this.modeMut.set('live');
+        this.lastContinuationKey = null;
+        this.loadingMut.set(false);
+        const limit = this.computeLimit();
+        this.currentLimitMut.set(limit);
+        this.currentDirectionMut.set('DESC');
+        await this.messages.updateSelection(...this.liveModeSelection(limit));
+        // afterLayout() will handle scrolling on next render
+    }
+
+    // Called explicitly when user clicks "Jump to Current"
+    async jumpToLive() {
+        console.log('jumpToLive');
+        await this.setLiveMode();
+        this.scrollToBottom();
+    }
+
+    // Boundary detection
+    get atEarliest(): boolean {
+        const resultCount = this.messages.resultset.items?.length || 0;
+        const currentLimit = this.currentLimitMut.get();
+        const currentDirection = this.currentDirectionMut.get();
+        // DESC queries hit oldest when count < limit
+        // Note: If resultCount == limit, we might actually be at the earliest, but we can't know
+        // until we try to load more. However, our safety margin (querySize - minBufferSize = 2.25
+        // viewports) ensures we won't have a visible gap even if the next load returns zero new records.
+        return currentDirection === 'DESC' && resultCount < currentLimit;
+    }
+
+    get atLatest(): boolean {
+        const mode = this.modeMut.peek();
+        const resultCount = this.messages.resultset.items?.length || 0;
+        const currentLimit = this.currentLimitMut.get();
+        const currentDirection = this.currentDirectionMut.get();
+        // Live mode is always at latest, ASC queries hit newest when count < limit
+        return mode === 'live' || (currentDirection === 'ASC' && resultCount < currentLimit);
+    }
+
+    // Buffer gap detection
+    private get topBelowMinimum(): boolean {
+        if (!this.container) return false;
+        const { minBuffer } = this.getThresholds();
+        return this.container.scrollTop < minBuffer;
+    }
+
+    private get bottomBelowMinimum(): boolean {
+        if (!this.container) return false;
+        const { scrollTop, scrollHeight, clientHeight } = this.container;
+        const bottomGap = scrollHeight - scrollTop - clientHeight;
+        const { minBuffer } = this.getThresholds();
+        return bottomGap < minBuffer;
+    }
+
+    get shouldAutoScroll(): boolean {
+        const mode = this.mode.get();
+        const bottomGap = this.metrics.get().bottomGap;
+        return mode === 'live' && bottomGap < 50;
     }
 
     get items(): MessageView[] {
@@ -94,15 +173,17 @@ export class ChatScrollManager {
         }
     };
     afterLayout() {
+        console.log('afterLayout');
         if (!this.initialized) {
             this.initialized = true;
-            this.setLiveMode();
-        } else if (this.modeMut.peek() === 'live') {
+        }
+        if (this.shouldAutoScroll) {
             this.scrollToBottom();
         }
     }
 
     destroy() {
+        this._guard?.free();
         if (this.container) {
             if (this.scrollHandler) {
                 this.container.removeEventListener('scroll', this.scrollHandler);
@@ -121,7 +202,7 @@ export class ChatScrollManager {
     }
 
     private computeLimit(): number {
-        if (!this.container) return 100;
+        if (!this.container) return 20; // TODO set back to 20 and investigate missing records after some updateSelection calls
         const computedStyle = window.getComputedStyle(this.container);
         const paddingTop = parseFloat(computedStyle.paddingTop) || 0;
         const paddingBottom = parseFloat(computedStyle.paddingBottom) || 0;
@@ -215,17 +296,8 @@ export class ChatScrollManager {
 
     async loadMore(direction: 'backward' | 'forward') {
         const isBackward = direction === 'backward';
-        const loadingFlag = isBackward ? this.loadingBackwardMut : this.loadingForwardMut;
-
-        // Guards before setting loading flag
-        if (loadingFlag.peek()) return;
-        if (isBackward && this.hitBeginning) return; // Don't load backward if we've hit the beginning
-
         const messageList = this.items;
-        if (messageList.length === 0 || !this.container) {
-            await this.setLiveMode();
-            return;
-        }
+
         const anchorData = this.getContinuationAnchor(direction, messageList);
         if (!anchorData) return;
 
@@ -233,8 +305,8 @@ export class ChatScrollManager {
         const key = `${direction}-${msg.timestamp}`;
         if (key === this.lastContinuationKey) return;
 
-        // All guards passed - begin load
-        loadingFlag.set(true);
+        // Begin load
+        this.loadingMut.set(direction);
         this.modeMut.set(direction);
         this.lastContinuationKey = key;
 
@@ -248,11 +320,14 @@ export class ChatScrollManager {
 
         const op = isBackward ? '<=' : '>=';
         const order = isBackward ? 'DESC' : 'ASC';
+
         await this.messages.updateSelection(
-            `room = ? AND timestamp ${op} ? ORDER BY timestamp ${order} LIMIT ${limit}`,
+            `room = ? AND deleted = false AND timestamp ${op} ? ORDER BY timestamp ${order} LIMIT ${limit}`,
             this.roomId,
             Number(msg.timestamp)
         );
+        this.currentLimitMut.set(limit);
+        this.currentDirectionMut.set(order);
 
         // Log timestamp range after load
         const afterList = this.items;
@@ -265,57 +340,18 @@ export class ChatScrollManager {
             after: { earliest: earliestAfter, latest: latestAfter, count: afterList.length }
         });
 
-        // Check if we hit the boundaries
-        const resultCount = this.messages.resultset.items?.length || 0;
-        if (isBackward && resultCount < limit) {
-            // Hit the beginning (oldest messages)
-            this.hitBeginning = true;
-            console.log('→ Hit beginning (oldest messages)');
-        } else if (!isBackward && resultCount < limit) {
-            // Hit the end (newest messages), switch to live
+        // If we hit the newest boundary - switch to live
+        if (this.atLatest) {
             await this.setLiveMode();
-            loadingFlag.set(false);
             return;
-        } else if (!isBackward) {
-            // Loading forward successfully - clear beginning flag
-            this.hitBeginning = false;
         }
 
         const { y: yAfter } = offsetToParent(el) || { y: 0 };
         const delta = yAfter - yBefore;
         console.log('loadMore:', direction, msg.text, 'delta:', delta);
 
-        this.scrollTo(this.container.scrollTop + delta);
-        loadingFlag.set(false);
-    }
-
-    private checkBuffers() {
-        if (!this.container) return;
-
-        const { scrollTop, scrollHeight, clientHeight } = this.container;
-        const topGap = scrollTop;
-        const bottomGap = scrollHeight - scrollTop - clientHeight;
-        const { minBuffer } = this.getThresholds();
-
-        console.log('checkBuffers:', { topGap, bottomGap, minBuffer });
-
-        // If still within buffer zone, load more
-        if (topGap < minBuffer) {
-            this.loadMore('backward');
-        } else if (bottomGap < minBuffer) {
-            this.loadMore('forward');
-        }
-    }
-
-    async setLiveMode() {
-        console.log('→ setLiveMode');
-        this.modeMut.set('live');
-        this.lastContinuationKey = null;
-        this.hitBeginning = false;
-        this.loadingBackwardMut.set(false);
-        this.loadingForwardMut.set(false);
-        await this.messages.updateSelection(`room = ? ORDER BY timestamp DESC LIMIT ${this.computeLimit()}`, this.roomId);
-        // afterLayout() will handle scrolling once DOM updates
+        if (this.container) this.scrollTo(this.container.scrollTop + delta);
+        this.loadingMut.set(false);
     }
 
     private onUserScroll() {
@@ -326,26 +362,25 @@ export class ChatScrollManager {
     private onScroll() {
         if (!this.container) return;
 
-        const { scrollTop, scrollHeight, clientHeight } = this.container;
-        const scrollDelta = scrollTop - this.lastScrollTop;
-        this.lastScrollTop = scrollTop;
-
-        const topGap = scrollTop;
-        const bottomGap = scrollHeight - scrollTop - clientHeight;
+        const scrollDelta = this.container.scrollTop - this.lastScrollTop;
+        this.lastScrollTop = this.container.scrollTop;
 
         // Always update metrics (for debug display)
         this.updateMetrics();
 
         // Only trigger loads on user-initiated scrolls
         if (this.userScrolling) {
-            this.userScrolling = false; // Clear flag
+            this.userScrolling = false;
 
-            const { minBuffer } = this.getThresholds();
+            const messageList = this.items;
+            if (messageList.length === 0) return;
 
-            // Trigger loads based on scroll direction and buffer gaps
-            if (scrollDelta < 0 && topGap < minBuffer) {
+            // Scrolled up - try to load older messages
+            if (scrollDelta < 0 && this.topBelowMinimum && !this.atEarliest && this.loadingMut.peek() !== 'backward') {
                 this.loadMore('backward');
-            } else if (scrollDelta > 0 && bottomGap < minBuffer) {
+            }
+            // Scrolled down - try to load newer messages
+            else if (scrollDelta > 0 && this.bottomBelowMinimum && !this.atLatest && this.loadingMut.peek() !== 'forward') {
                 this.loadMore('forward');
             }
         }
@@ -354,12 +389,9 @@ export class ChatScrollManager {
     private scrollTo(scrollTop: number) {
         if (!this.container) return;
         if (scrollTop !== this.container.scrollTop) {
-            this.paused = true;
             this.container.scrollTop = scrollTop;
-
             requestAnimationFrame(() => {
                 this.updateMetrics();
-                this.paused = false;
             });
         }
     }
