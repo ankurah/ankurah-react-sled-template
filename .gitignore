@@ -1,1 +1,30 @@
-/target
+# Rust
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# WASM
+wasm-bindings/pkg/
+*.wasm
+
+# React
+react-app/node_modules/
+react-app/dist/
+react-app/.vite/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

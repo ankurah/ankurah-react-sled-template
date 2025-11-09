@@ -1,0 +1,24 @@
+[package]
+name    = "{{project-name}}-model"
+version = "0.6.0"
+edition = "2021"
+publish = false
+
+[features]
+default = []
+wasm    = ["dep:wasm-bindgen", "ankurah/wasm", "ankurah/react"]
+
+[dependencies]
+ankurah      = { version = "0.6.7", features = ["derive"] }
+serde        = { version = "1.0", features = ["derive"] }
+serde_json   = "1.0"
+wasm-bindgen = { version = "0.2", optional = true }
+
+tsify = { version = "0.4" }
+
+##### patch - something is wrong with the uuid crate for wasm
+getrandom = { version = "0.3", features = ["wasm_js"] }
+chrono    = { version = "0.4", default-features = false, features = ["serde"] }
+###### 
+
+tracing = { version = "0.1" }

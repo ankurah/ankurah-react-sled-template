@@ -1,0 +1,66 @@
+#! /bin/bash
+
+# this script takes one of two commands: `enable` or `disable` the usage
+# of your local ankurah repo versus the published version
+
+mkdir -p .cargo
+touch .cargo/config.toml
+
+CONFIG_FILE=".cargo/config.toml"
+PATCH_CONTENT='[patch.crates-io]
+ankurah = { path = "../ankurah/ankurah" }
+ankql = { path = "../ankurah/ankql" }
+ankurah-signals = { path = "../ankurah/signals" }
+ankurah-websocket-server = { path = "../ankurah/connectors/websocket-server" }
+ankurah-websocket-client-wasm = { path = "../ankurah/connectors/websocket-client-wasm" }
+ankurah-storage-indexeddb-wasm = { path = "../ankurah/storage/indexeddb-wasm" }
+ankurah-storage-sled = { path = "../ankurah/storage/sled" }
+ankurah-storage-postgres = { path = "../ankurah/storage/postgres" }'
+
+show_status() {
+    if grep -q "\[patch.crates-io\]" "$CONFIG_FILE"; then
+        echo "Status: ENABLED - Using local ankurah dependencies"
+    else
+        echo "Status: DISABLED - Using published ankurah crates"
+    fi
+}
+
+show_usage() {
+    echo "Usage: $0 [command]"
+    echo ""
+    echo "Commands:"
+    echo "  enable   - Use local ankurah dependencies"
+    echo "  disable  - Use published ankurah crates"
+    echo "  (no arg) - Show current status"
+    echo ""
+}
+
+if [ "$1" = "enable" ]; then
+    # Check if patch section already exists
+    if grep -q "\[patch.crates-io\]" "$CONFIG_FILE"; then
+        echo "Patch section already exists in $CONFIG_FILE"
+        exit 0
+    fi
+    
+    # Add patch section
+    echo -e "\n$PATCH_CONTENT" >> "$CONFIG_FILE"
+    echo "Enabled local ankurah dependencies in $CONFIG_FILE"
+
+elif [ "$1" = "disable" ]; then
+    # Create temporary file
+    TMP_FILE=$(mktemp)
+    
+    # Remove patch section and strip trailing blank lines
+    sed '/^\[patch.crates-io\]/,/^[[:space:]]*$/d' "$CONFIG_FILE" | sed -e :a -e '/^\n*$/N;/\n$/ba' -e 'P;D' > "$TMP_FILE"
+    
+    # Move temporary file back to original
+    mv "$TMP_FILE" "$CONFIG_FILE"
+    echo "Disabled local ankurah dependencies in $CONFIG_FILE"
+
+else
+    show_status
+    echo ""
+    show_usage
+fi
+
+# TODO
