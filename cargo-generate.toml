@@ -1,5 +1,5 @@
 [template]
-binary = ["react-app/src/bun.lockb", "react-app/bun.lockb"]
+binary = ["react-app/src/bun.lockb", "react-app/bun.lockb", "react-app/public/sounds/notification.mp3"]
 
 [hooks]
 post = [
