@@ -1,0 +1,56 @@
+name: Prepare Template
+
+on:
+    push:
+        branches:
+            - dev
+
+jobs:
+    promote:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  ref: dev
+                  fetch-depth: 0
+
+            - name: Prepare transformed tree
+              run: |
+                  set -euo pipefail
+                  find react-app -name '*.tsx' -print0 \
+                    | while IFS= read -r -d '' file; do \
+                        perl -0pi -e 's/\{\{ (.*?:.*?) \}\}/{% raw %}{{$1}}{% endraw %}/gs' "$file"; \
+                      done
+                  find . -type f -not -path './.git/*' -print0 \
+                    | xargs -0 perl -pi -e 's/ankurah-template/{{project-name}}/g'
+                  find . -type f -not -path './.git/*' -print0 \
+                    | xargs -0 perl -pi -e 's/ankurah_template/{{crate_name}}/g'
+                  git log -1 --pretty=%B dev > /tmp/dev-commit-msg
+                  rm -rf .github
+                  mkdir -p /tmp/prepared
+                  rsync -a --delete --exclude '.git/' ./ /tmp/prepared/
+                  git reset --hard HEAD
+                  git clean -fd
+
+            - name: Update main branch
+              run: |
+                  set -euo pipefail
+                  git fetch origin main || true
+                  if git rev-parse --verify origin/main >/dev/null 2>&1; then
+                    git checkout -B main origin/main
+                  else
+                    git checkout -B main
+                  fi
+                  rsync -a --delete --exclude '.git/' /tmp/prepared/ ./
+                  rm -rf .github
+                  git config user.name "ankurah-bot"
+                  git config user.email "infra@ankurah.dev"
+                  git add -A
+                  if git diff --cached --quiet; then
+                    echo "No changes to commit"
+                    exit 0
+                  fi
+                  git commit -F /tmp/dev-commit-msg
+                  git push origin HEAD:main

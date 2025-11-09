@@ -63,11 +63,7 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
         <div
             ref={menuRef}
             className="contextMenu"
-            style={{
-                position: "fixed",
-                left: `${x}px`,
-                top: `${y}px`,
-            }}
+            style={{ position: "fixed", left: `${x}px`, top: `${y}px` }}
         >
             <button
                 className="contextMenuItem"

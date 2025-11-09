@@ -1,0 +1,3 @@
+[template]
+binary = ["react-app/src/bun.lockb", "react-app/bun.lockb"]
+
