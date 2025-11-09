@@ -1,5 +1,9 @@
 [template]
-binary = ["react-app/src/bun.lockb", "react-app/bun.lockb", "react-app/public/sounds/notification.mp3"]
+exclude = [
+    "react-app/src/bun.lockb",
+    "react-app/bun.lockb",
+    "react-app/public/sounds/notification.mp3",
+]
 
 [hooks]
 post = [
