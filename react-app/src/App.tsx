@@ -4,17 +4,18 @@ import {
   RoomView,
   JsValueMut,
   ctx,
+  current_user,
 } from "ankurah-template-wasm-bindings";
 import { Header } from "./components/Header";
 import { Chat } from "./components/Chat";
 import { RoomList } from "./components/RoomList";
 import { DebugOverlay } from "./components/DebugOverlay";
 import { NotificationManager } from "./NotificationManager";
-import { signalObserver, ensureUser } from "./utils";
+import { signalObserver } from "./utils";
 import "./App.css";
 
 const App: React.FC = signalObserver(() => {
-  const currentUser = useMemo(() => ensureUser(), []);
+  const currentUser = useMemo(() => current_user(), []);
   const [selectedRoom, selectedRoomRead] = useMemo(() => JsValueMut.newPair<RoomView | null>(null), []);
 
   const rooms = useMemo(() => Room.query(ctx(), "true ORDER BY name ASC"), []);

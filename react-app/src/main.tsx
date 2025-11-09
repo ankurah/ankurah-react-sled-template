@@ -41,7 +41,36 @@ if (isMobileSafari()) {
 
 (async () => {
   console.log("Initializing application");
+
+  // Show loading message
+  const root = document.getElementById("root")!;
+  root.innerHTML = `
+    <style>
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+      }
+    </style>
+    <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: system-ui, -apple-system, sans-serif; color: #666;">
+      <div style="text-align: center;">
+        <div class="spinner"></div>
+        <div style="font-size: 18px; margin-bottom: 8px;">Waiting for server...</div>
+        <div style="font-size: 14px; color: #999;">Initializing connection</div>
+      </div>
+    </div>
+  `;
+
   await init_bindings();
   await ready();
-  createRoot(document.getElementById("root")!).render(<App />);
+
+  // Clear loading message and render app
+  createRoot(root).render(<App />);
 })();

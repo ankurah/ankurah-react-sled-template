@@ -21,36 +21,6 @@ export function useAsync<T>(fn: () => Promise<T>, deps: React.DependencyList): T
     return value;
 }
 
-// LocalStorage keys
-const STORAGE_KEY_USER_ID = "ankurah_template_user_id";
-
-export function ensureUser(): JsValueRead<UserView | null> {
-    const [userMut, userRead] = JsValueMut.newPair<UserView | null>(null);
-
-    const initUser = async () => {
-        try {
-            const context = ctx();
-            const storedUserId = localStorage.getItem(STORAGE_KEY_USER_ID);
-
-            if (storedUserId) {
-                const user = await User.get(context, EntityId.from_base64(storedUserId));
-                userMut.set(user);
-                return;
-            }
-
-            const transaction = context.begin();
-            const userView = await User.create(transaction, {
-                display_name: `User-${Math.floor(Math.random() * 10000)}`,
-            });
-            await transaction.commit();
-            localStorage.setItem(STORAGE_KEY_USER_ID, userView.id.to_base64());
-
-            userMut.set(userView);
-        } catch (error) {
-            console.error("Failed to initialize user:", error);
-        }
-    };
-
-    initUser();
-    return userRead;
-}
+// User initialization is now handled in WASM (wasm-bindings/src/lib.rs)
+// Re-export the current_user signal
+export { current_user as currentUser } from "ankurah-template-wasm-bindings";

@@ -23,8 +23,6 @@ dependencies = [
 [[package]]
 name = "ankql"
 version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5844be83984ce63adfa33f8e33d130a0179b02307a7b946f9ae3fe155993b18d"
 dependencies = [
  "base64",
  "log",
@@ -40,8 +38,6 @@ dependencies = [
 [[package]]
 name = "ankurah"
 version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e28f553afae561b8f613abb5ea8f155c686c23ae68c197190c0fe359571b131f"
 dependencies = [
  "ankql",
  "ankurah-core",
@@ -60,8 +56,6 @@ dependencies = [
 [[package]]
 name = "ankurah-core"
 version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3fc1150219b7865eedf86f78b09356ddd594688a2d518d6b1e945d5f84bff3a"
 dependencies = [
  "ankql",
  "ankurah-derive",
@@ -98,8 +92,6 @@ dependencies = [
 [[package]]
 name = "ankurah-derive"
 version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b40d0e6f717d401f25b347f7b8f563b446bba8d8e1c94618b13f5a318db90a21"
 dependencies = [
  "ankql",
  "proc-macro2",
@@ -114,8 +106,6 @@ dependencies = [
 [[package]]
 name = "ankurah-proto"
 version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d5d0d7410cc2f5e1bf89464d193adbe92e42acff0907205495d51ff7b5a263f"
 dependencies = [
  "ankql",
  "anyhow",
@@ -134,8 +124,6 @@ dependencies = [
 [[package]]
 name = "ankurah-signals"
 version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7cfafc0d42e30afbde39c0b5dfccb1a88d6e63ec6231eb1598606ccdcd5bd92e"
 dependencies = [
  "js-sys",
  "send_wrapper 0.6.0",
@@ -148,8 +136,6 @@ dependencies = [
 [[package]]
 name = "ankurah-storage-common"
 version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75ab7e50859e10732d6011438565cff5f50fe8ff2a8fc8b0448ebd13f94936c1"
 dependencies = [
  "ankql",
  "ankurah-core",
@@ -162,8 +148,6 @@ dependencies = [
 [[package]]
 name = "ankurah-storage-indexeddb-wasm"
 version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca4026cf14812d3d5a9b1c1eddad1331457b18000c910aae9845518cb42d3ca0"
 dependencies = [
  "ankql",
  "ankurah-core",
@@ -198,8 +182,6 @@ dependencies = [
 [[package]]
 name = "ankurah-storage-sled"
 version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "66002311eb1401725b28e7e5c97d48786883b703405e08a2a8b2bf7c041106c9"
 dependencies = [
  "ankql",
  "ankurah-core",
@@ -224,8 +206,12 @@ name = "ankurah-template-model"
 version = "0.6.0"
 dependencies = [
  "ankurah",
+ "async-trait",
+ "base64",
  "chrono",
+ "ed25519-dalek",
  "getrandom 0.3.4",
+ "once_cell",
  "serde",
  "serde_json",
  "tracing",
@@ -257,10 +243,14 @@ dependencies = [
  "ankurah-storage-indexeddb-wasm",
  "ankurah-template-model",
  "ankurah-websocket-client-wasm",
+ "base64",
  "console_error_panic_hook",
+ "ed25519-dalek",
  "getrandom 0.3.4",
+ "js-sys",
  "lazy_static",
  "once_cell",
+ "rand 0.8.5",
  "send_wrapper 0.6.0",
  "tokio",
  "tracing",
@@ -274,8 +264,6 @@ dependencies = [
 [[package]]
 name = "ankurah-websocket-client-wasm"
 version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbc4f70df2c81cbfa875f21b1a2f87312667c2efadb3031821d2a36f57bd3621"
 dependencies = [
  "ankurah",
  "ankurah-core",
@@ -306,8 +294,6 @@ dependencies = [
 [[package]]
 name = "ankurah-websocket-server"
 version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ac9bb6d468c60dd2cc43bf9f985a84b286263ccd2c590b3c19aa3f03840ff58"
 dependencies = [
  "ankurah-core",
  "ankurah-proto",
@@ -474,6 +460,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
+name = "base64ct"
+version = "1.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "55248b47b0caf0546f7988906588779981c43bb1bc9d0c44087278f80cdb44ba"
+
+[[package]]
 name = "bincode"
 version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -588,6 +580,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "const-oid"
+version = "0.9.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2459377285ad874054d797f3ccebf984978aa39129f6eafde5cdc8315b612f8"
+
+[[package]]
 name = "constant_time_eq"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -643,6 +641,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "curve25519-dalek"
+version = "4.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97fb8b7c4503de7d6ae7b42ab72a5a59857b4c937ec27a3d4539dba95b5ab2be"
+dependencies = [
+ "cfg-if",
+ "cpufeatures",
+ "curve25519-dalek-derive",
+ "digest",
+ "fiat-crypto",
+ "rustc_version",
+ "subtle",
+ "zeroize",
+]
+
+[[package]]
+name = "curve25519-dalek-derive"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f46882e17999c6cc590af592290432be3bce0428cb0d5f8b6715e4dc7b383eb3"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "dashmap"
 version = "6.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -661,6 +686,16 @@ name = "data-encoding"
 version = "2.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2a2330da5de22e8a3cb63252ce2abb30116bf5265e89c0e01bc17015ce30a476"
+
+[[package]]
+name = "der"
+version = "0.7.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7c1832837b905bbfb5101e07cc24c8deddf52f93225eee6ead5f4d63d53ddcb"
+dependencies = [
+ "const-oid",
+ "zeroize",
+]
 
 [[package]]
 name = "digest"
@@ -698,6 +733,31 @@ name = "discard"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "212d0f5754cb6769937f4501cc0e67f4f4483c8d2c3e1e922ee9edbe4ab4c7c0"
+
+[[package]]
+name = "ed25519"
+version = "2.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "115531babc129696a58c64a4fef0a8bf9e9698629fb97e9e40767d235cfbcd53"
+dependencies = [
+ "pkcs8",
+ "signature",
+]
+
+[[package]]
+name = "ed25519-dalek"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "70e796c081cee67dc755e1a36a0a172b897fab85fc3f6bc48307991f64e4eca9"
+dependencies = [
+ "curve25519-dalek",
+ "ed25519",
+ "rand_core 0.6.4",
+ "serde",
+ "sha2",
+ "subtle",
+ "zeroize",
+]
 
 [[package]]
 name = "either"
@@ -740,6 +800,12 @@ checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
 dependencies = [
  "getrandom 0.2.16",
 ]
+
+[[package]]
+name = "fiat-crypto"
+version = "0.2.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "28dea519a9695b9977216879a3ebfddf92f1c08c05d984f8996aecd6ecdc811d"
 
 [[package]]
 name = "find-msvc-tools"
@@ -1402,6 +1468,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
+name = "pkcs8"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f950b2377845cebe5cf8b5165cb3cc1a5e0fa5cfa3e1f7f55707d8fd82e0a7b7"
+dependencies = [
+ "der",
+ "spki",
+]
+
+[[package]]
 name = "ppv-lite86"
 version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1565,6 +1641,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustc_version"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfcb3a22ef46e85b45de6ee7e79d063319ebb6594faafcf1c225ea92ab6e9b92"
+dependencies = [
+ "semver",
+]
+
+[[package]]
 name = "rustversion"
 version = "1.0.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1581,6 +1666,12 @@ name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
+
+[[package]]
+name = "semver"
+version = "1.0.27"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d767eb0aabc880b29956c35734170f26ed551a859dbd361d140cdbeca61ab1e2"
 
 [[package]]
 name = "send_wrapper"
@@ -1723,6 +1814,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
+name = "signature"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77549399552de45a898a580c1b41d445bf730df867cc44e6c0233bbc4b8329de"
+dependencies = [
+ "rand_core 0.6.4",
+]
+
+[[package]]
 name = "slab"
 version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1770,6 +1870,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "spki"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d91ed6c858b01f942cd56b37a94b3e0a1798290327d1236e4d9cf4eaca44d29d"
+dependencies = [
+ "base64ct",
+ "der",
+]
+
+[[package]]
 name = "strum"
 version = "0.26.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1790,6 +1900,12 @@ dependencies = [
  "rustversion",
  "syn",
 ]
+
+[[package]]
+name = "subtle"
+version = "2.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "syn"
@@ -2395,3 +2511,13 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "zeroize"
+version = "1.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b97154e67e32c85465826e8bcc1c59429aaaf107c1e4a9e53c8d8ccd5eff88d0"
+
+[[patch.unused]]
+name = "ankurah-storage-postgres"
+version = "0.6.8"

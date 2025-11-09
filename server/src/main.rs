@@ -1,6 +1,6 @@
-use ankurah::{policy::DEFAULT_CONTEXT as c, Node, PermissiveAgent};
+use ankurah::Node;
 use ankurah_storage_sled::SledStorageEngine;
-use ankurah_template_model::{Room, RoomView};
+use ankurah_template_model::{MyContextData, Room, RoomView, UserKeyPairAgent};
 use ankurah_websocket_server::WebsocketServer;
 use anyhow::Result;
 use std::sync::Arc;
@@ -12,7 +12,13 @@ async fn main() -> Result<()> {
 
     // Initialize storage engine
     let storage = SledStorageEngine::with_homedir_folder(".ankurah-template")?;
-    let node = Node::new_durable(Arc::new(storage), PermissiveAgent::new());
+    
+    // Create agent and node
+    let agent = UserKeyPairAgent::new_server();
+    let node = Node::new_durable(Arc::new(storage), agent.clone());
+    
+    // Initialize agent's root context now that node exists
+    agent.initialize_root_context(node.clone());
 
     node.system.wait_loaded().await;
     if node.system.root().is_none() {
@@ -28,8 +34,8 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn ensure_general_room(node: &Node<SledStorageEngine, PermissiveAgent>) -> Result<()> {
-    let context = node.context_async(c).await;
+async fn ensure_general_room(node: &Node<SledStorageEngine, UserKeyPairAgent>) -> Result<()> {
+    let context = node.context_async(MyContextData::Root).await;
 
     // Query for a room named "General"
     let rooms = context.fetch::<RoomView>("name = 'General'").await?;
