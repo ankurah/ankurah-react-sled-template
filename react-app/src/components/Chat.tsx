@@ -13,15 +13,17 @@ import { MessageInput } from "./MessageInput";
 import { ChatDebugHeader } from "./ChatDebugHeader";
 import { signalObserver } from "../utils";
 import { ChatScrollManager } from "../ChatScrollManager";
+import { NotificationManager } from "../NotificationManager";
 import { useDebugMode } from "../hooks/useDebugMode";
 import "./Chat.css";
 
 interface ChatProps {
     room: JsValueRead<RoomView | null>;
     currentUser: JsValueRead<UserView | null>;
+    notificationManager: NotificationManager | null;
 }
 
-export const Chat: React.FC<ChatProps> = signalObserver(({ room, currentUser }) => {
+export const Chat: React.FC<ChatProps> = signalObserver(({ room, currentUser, notificationManager }) => {
     const currentRoom = room.get();
     const user = currentUser.get();
 
@@ -33,9 +35,9 @@ export const Chat: React.FC<ChatProps> = signalObserver(({ room, currentUser }) 
 
     // Create scroll manager when room changes
     const manager = useMemo(() => {
-        if (!currentRoom) return null;
-        return new ChatScrollManager(currentRoom.id.to_base64());
-    }, [currentRoom]);
+        if (!currentRoom || !notificationManager) return null;
+        return new ChatScrollManager(currentRoom.id.to_base64(), notificationManager);
+    }, [currentRoom, notificationManager]);
 
     // Query for all users
     const users = useMemo(() => User.query(ctx(), ""), []);

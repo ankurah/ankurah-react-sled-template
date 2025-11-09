@@ -22,7 +22,9 @@ dependencies = [
 
 [[package]]
 name = "ankql"
-version = "0.6.7"
+version = "0.6.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5844be83984ce63adfa33f8e33d130a0179b02307a7b946f9ae3fe155993b18d"
 dependencies = [
  "base64",
  "log",
@@ -37,7 +39,9 @@ dependencies = [
 
 [[package]]
 name = "ankurah"
-version = "0.6.7"
+version = "0.6.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e28f553afae561b8f613abb5ea8f155c686c23ae68c197190c0fe359571b131f"
 dependencies = [
  "ankql",
  "ankurah-core",
@@ -55,7 +59,9 @@ dependencies = [
 
 [[package]]
 name = "ankurah-core"
-version = "0.6.7"
+version = "0.6.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f3fc1150219b7865eedf86f78b09356ddd594688a2d518d6b1e945d5f84bff3a"
 dependencies = [
  "ankql",
  "ankurah-derive",
@@ -91,7 +97,9 @@ dependencies = [
 
 [[package]]
 name = "ankurah-derive"
-version = "0.6.7"
+version = "0.6.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b40d0e6f717d401f25b347f7b8f563b446bba8d8e1c94618b13f5a318db90a21"
 dependencies = [
  "ankql",
  "proc-macro2",
@@ -99,13 +107,15 @@ dependencies = [
  "regex",
  "ron",
  "serde",
- "serde_derive_internals 0.29.1",
+ "serde_derive_internals",
  "syn",
 ]
 
 [[package]]
 name = "ankurah-proto"
-version = "0.6.7"
+version = "0.6.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d5d0d7410cc2f5e1bf89464d193adbe92e42acff0907205495d51ff7b5a263f"
 dependencies = [
  "ankql",
  "anyhow",
@@ -123,7 +133,9 @@ dependencies = [
 
 [[package]]
 name = "ankurah-signals"
-version = "0.6.7"
+version = "0.6.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7cfafc0d42e30afbde39c0b5dfccb1a88d6e63ec6231eb1598606ccdcd5bd92e"
 dependencies = [
  "js-sys",
  "send_wrapper 0.6.0",
@@ -135,7 +147,9 @@ dependencies = [
 
 [[package]]
 name = "ankurah-storage-common"
-version = "0.6.7"
+version = "0.6.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75ab7e50859e10732d6011438565cff5f50fe8ff2a8fc8b0448ebd13f94936c1"
 dependencies = [
  "ankql",
  "ankurah-core",
@@ -147,7 +161,9 @@ dependencies = [
 
 [[package]]
 name = "ankurah-storage-indexeddb-wasm"
-version = "0.6.7"
+version = "0.6.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ca4026cf14812d3d5a9b1c1eddad1331457b18000c910aae9845518cb42d3ca0"
 dependencies = [
  "ankql",
  "ankurah-core",
@@ -181,7 +197,9 @@ dependencies = [
 
 [[package]]
 name = "ankurah-storage-sled"
-version = "0.6.7"
+version = "0.6.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "66002311eb1401725b28e7e5c97d48786883b703405e08a2a8b2bf7c041106c9"
 dependencies = [
  "ankql",
  "ankurah-core",
@@ -211,13 +229,12 @@ dependencies = [
  "serde",
  "serde_json",
  "tracing",
- "tsify",
  "wasm-bindgen",
 ]
 
 [[package]]
 name = "{{project-name}}-server"
-version = "0.6.0"
+version = "0.1.0"
 dependencies = [
  "ankurah",
  "ankurah-storage-sled",
@@ -256,7 +273,9 @@ dependencies = [
 
 [[package]]
 name = "ankurah-websocket-client-wasm"
-version = "0.6.7"
+version = "0.6.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbc4f70df2c81cbfa875f21b1a2f87312667c2efadb3031821d2a36f57bd3621"
 dependencies = [
  "ankurah",
  "ankurah-core",
@@ -286,7 +305,9 @@ dependencies = [
 
 [[package]]
 name = "ankurah-websocket-server"
-version = "0.6.7"
+version = "0.6.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ac9bb6d468c60dd2cc43bf9f985a84b286263ccd2c590b3c19aa3f03840ff58"
 dependencies = [
  "ankurah-core",
  "ankurah-proto",
@@ -959,19 +980,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gloo-utils"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "037fcb07216cb3a30f7292bd0176b050b7b9a052ba830ef7d5d65f6dc64ba58e"
-dependencies = [
- "js-sys",
- "serde",
- "serde_json",
- "wasm-bindgen",
- "web-sys",
-]
-
-[[package]]
 name = "hashbrown"
 version = "0.14.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1632,17 +1640,6 @@ dependencies = [
 
 [[package]]
 name = "serde_derive_internals"
-version = "0.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e578a843d40b4189a4d66bba51d7684f57da5bd7c304c64e14bd63efbef49509"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "serde_derive_internals"
 version = "0.29.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "18d26a20a969b9e3fdf2fc2d9f21eda6c40e2de84c9408bb5d3b05d499aae711"
@@ -2009,31 +2006,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "tsify"
-version = "0.4.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6b26cf145f2f3b9ff84e182c448eaf05468e247f148cf3d2a7d67d78ff023a0"
-dependencies = [
- "gloo-utils",
- "serde",
- "serde_json",
- "tsify-macros",
- "wasm-bindgen",
-]
-
-[[package]]
-name = "tsify-macros"
-version = "0.4.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a94b0f0954b3e59bfc2c246b4c8574390d94a4ad4ad246aaf2fb07d7dfd3b47"
-dependencies = [
- "proc-macro2",
- "quote",
- "serde_derive_internals 0.28.0",
- "syn",
 ]
 
 [[package]]
@@ -2423,7 +2395,3 @@ dependencies = [
  "quote",
  "syn",
 ]
-
-[[patch.unused]]
-name = "ankurah-storage-postgres"
-version = "0.6.7"

@@ -1,4 +1,5 @@
 import { Message, MessageView, MessageLiveQuery, ctx, JsValueMut, SubscriptionGuard } from "{{project-name}}-wasm-bindings";
+import { NotificationManager } from "./NotificationManager";
 
 type ScrollMode = 'live' | 'backward' | 'forward';
 
@@ -53,7 +54,10 @@ export class ChatScrollManager {
     private currentDirectionMut = new JsValueMut<'ASC' | 'DESC'>('DESC');
     private _guard: SubscriptionGuard | null = null;
 
-    constructor(private roomId: string) {
+    constructor(
+        private roomId: string,
+        private notificationManager: NotificationManager
+    ) {
         const limit = this.computeLimit();
         this.currentLimitMut.set(limit);
         this.currentDirectionMut.set('DESC');
@@ -65,6 +69,9 @@ export class ChatScrollManager {
             // because we're registering the subscription before the observer does
             setTimeout(() => this.afterLayout(), 0);
         });
+
+        // Set as active room since rooms start in live mode
+        this.notificationManager.setActiveRoom(this.roomId);
     }
 
     private liveModeSelection(limit: number): [string, string] {
@@ -80,6 +87,8 @@ export class ChatScrollManager {
         this.currentLimitMut.set(limit);
         this.currentDirectionMut.set('DESC');
         await this.messages.updateSelection(...this.liveModeSelection(limit));
+        // Set as active room when entering live mode
+        this.notificationManager.setActiveRoom(this.roomId);
         // afterLayout() will handle scrolling on next render
     }
 
@@ -173,7 +182,6 @@ export class ChatScrollManager {
         }
     };
     afterLayout() {
-        console.log('afterLayout');
         if (!this.initialized) {
             this.initialized = true;
         }
@@ -202,7 +210,7 @@ export class ChatScrollManager {
     }
 
     private computeLimit(): number {
-        if (!this.container) return 20; // TODO set back to 20 and investigate missing records after some updateSelection calls
+        if (!this.container) return 100; // TODO set back to 20 and investigate missing records after some updateSelection calls
         const computedStyle = window.getComputedStyle(this.container);
         const paddingTop = parseFloat(computedStyle.paddingTop) || 0;
         const paddingBottom = parseFloat(computedStyle.paddingBottom) || 0;
@@ -308,6 +316,10 @@ export class ChatScrollManager {
         // Begin load
         this.loadingMut.set(direction);
         this.modeMut.set(direction);
+        // Clear active room when leaving live mode
+        if (this.modeMut.peek() !== 'live') {
+            this.notificationManager.setActiveRoom(null);
+        }
         this.lastContinuationKey = key;
 
         const limit = this.computeLimit();

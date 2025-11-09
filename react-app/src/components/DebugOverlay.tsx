@@ -8,6 +8,7 @@ export const DebugOverlay: React.FC = () => {
         const updateWidths = () => {
             setWidths({
                 viewport: window.innerWidth,
+                visualViewportHeight: window.visualViewport?.height || 0,
                 htmlOffset: document.documentElement.offsetWidth,
                 htmlScroll: document.documentElement.scrollWidth,
                 bodyOffset: document.body.offsetWidth,
@@ -21,6 +22,7 @@ export const DebugOverlay: React.FC = () => {
 
         updateWidths();
         window.addEventListener('resize', updateWidths);
+        window.visualViewport?.addEventListener('resize', updateWidths);
         const interval = setInterval(updateWidths, 1000);
 
         return () => {
@@ -42,7 +44,7 @@ export const DebugOverlay: React.FC = () => {
         zIndex: 9999,
         maxWidth: '200px',
         pointerEvents: 'none',
-        opacity: 0.3,
+        opacity: 0.5,
     }), []);
 
     return (

@@ -72,6 +72,9 @@ export const MessageInput: React.FC<MessageInputProps> = signalObserver(({ room,
             await transaction.commit();
             console.log("Transaction committed");
             setMessageInput("");
+
+            // Always jump to live mode when sending a new message
+            await manager?.jumpToLive();
         }
     };
 
