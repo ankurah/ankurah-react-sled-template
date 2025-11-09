@@ -3,15 +3,9 @@ exclude = [
     "react-app/src/bun.lockb",
     "react-app/bun.lockb",
     "react-app/public/sounds/notification.mp3",
+    "hooks/post-gen.sh",
 ]
 
 [hooks]
-post = [
-    "message \"Next steps:\"",
-    "message \"  cd {{ project-name }}\"",
-    "message \"  ./dev.sh\"",
-    "message \"This starts watchers for the Rust server, wasm-bindings, and React app.\"",
-    "message \"Press Ctrl+C to stop and all watchers should exit cleanly.\"",
-    "message \"Need help? Join the Ankurah Discord! https://discord.gg/XMUUxsbT5S\""
-]
+post = ["hooks/post-gen.sh"]
 
