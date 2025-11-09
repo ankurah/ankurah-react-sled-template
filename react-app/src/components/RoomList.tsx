@@ -1,44 +1,48 @@
-import { useMemo, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
     Room,
     RoomView,
+    RoomLiveQuery,
     ctx,
     JsValueMut,
 } from "ankurah-template-wasm-bindings";
 import { signalObserver } from "../utils";
+import { NotificationManager } from "../NotificationManager";
 import "./RoomList.css";
 
 
 interface RoomListProps {
     selectedRoom: JsValueMut<RoomView | null>;
+    rooms: RoomLiveQuery;
+    notificationManager: NotificationManager | null;
 }
 
-export const RoomList: React.FC<RoomListProps> = signalObserver(({ selectedRoom }) => {
+export const RoomList: React.FC<RoomListProps> = signalObserver(({ selectedRoom, rooms, notificationManager }) => {
     const [isCreating, setIsCreating] = useState(false);
 
-    const rooms = useMemo(() => Room.query(ctx(), "true ORDER BY name ASC"), []);
+    // Each of these is a signal, so merely accessing it inside the signalObserver will track it
+    const items = rooms.items;
+    const unreadCounts = notificationManager?.unreadCounts.get() || {};
     const currentRoom = selectedRoom.get();
-    const selectedRoomId = currentRoom?.id.to_base64();
-    const items = (rooms.resultset.items || []) as RoomView[];
 
     // Auto-select room from URL or default to "General"
-    if (!currentRoom && items.length > 0) {
-        const roomId = new URLSearchParams(window.location.search).get('room');
-        const roomToSelect = (roomId && items.find(r => r.id.to_base64() === roomId))
-            || items.find(r => r.name === "General");
+    useEffect(() => {
+        if (!currentRoom && items.length > 0) {
+            const roomId = new URLSearchParams(window.location.search).get('room');
+            const roomToSelect = (roomId && items.find(r => r.id.to_base64() === roomId))
+                || items.find(r => r.name === "General");
 
-        if (roomToSelect) selectedRoom.set(roomToSelect);
-    }
+            if (roomToSelect) selectedRoom.set(roomToSelect);
+        }
+    }, [currentRoom, items, selectedRoom]);
 
     // Update URL when room changes
     useEffect(() => {
-        selectedRoom.subscribe((room: RoomView | null) => {
-            if (!room) return;
-            const url = new URL(window.location.href);
-            url.searchParams.set('room', room.id.to_base64());
-            window.history.replaceState({}, '', url.toString());
-        });
-    }, [selectedRoom]);
+        if (!currentRoom) return;
+        const url = new URL(window.location.href);
+        url.searchParams.set('room', currentRoom.id.to_base64());
+        window.history.replaceState({}, '', url.toString());
+    }, [currentRoom]);
 
     return (
         <div className="sidebar">
@@ -64,15 +68,24 @@ export const RoomList: React.FC<RoomListProps> = signalObserver(({ selectedRoom 
                 {items.length === 0 ? (
                     <div className="emptyRooms">No rooms available</div>
                 ) : (
-                    items.map((room) => (
-                        <div
-                            key={room.id.to_base64()}
-                            className={`roomItem ${selectedRoomId === room.id.to_base64() ? 'selected' : ''}`}
-                            onClick={() => selectedRoom.set(room)}
-                        >
-                            # {room.name}
-                        </div>
-                    ))
+                    items.map((room) => {
+                        const roomId = room.id.to_base64();
+                        const unreadCount = unreadCounts[roomId] || 0;
+                        return (
+                            <div
+                                key={roomId}
+                                className={`roomItem ${currentRoom?.id.to_base64() === roomId ? 'selected' : ''}`}
+                                onClick={() => selectedRoom.set(room)}
+                            >
+                                # {room.name}
+                                {unreadCount > 0 && (
+                                    <span className="unreadBadge">
+                                        {unreadCount >= 10 ? '10+' : unreadCount}
+                                    </span>
+                                )}
+                            </div>
+                        );
+                    })
                 )}
             </div>
         </div>

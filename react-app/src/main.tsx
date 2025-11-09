@@ -11,19 +11,32 @@ function isMobileSafari() {
 // Mobile Safari workaround: viewport units don't work reliably, so we use explicit pixel dimensions
 if (isMobileSafari()) {
   const applyDimensions = () => {
-    const w = Math.floor(window.innerWidth);
-    const h = Math.floor(window.innerHeight);
+    // Use visualViewport height if available (accounts for keyboard), otherwise fall back to innerHeight
+    const w = Math.floor(window.visualViewport?.width || window.innerWidth);
+    const h = Math.floor(window.visualViewport?.height || window.innerHeight);
     const props = ["width", "max-width", "height", "max-height"];
     const values = [w, w, h, h];
 
     [document.documentElement, document.body, document.getElementById("root")].forEach(el => {
       if (el) props.forEach((prop, i) => el.style.setProperty(prop, values[i] + "px", "important"));
     });
+
+    // Counter iOS's automatic window scroll when keyboard appears
+    if (window.scrollY !== 0) {
+      window.scrollTo(0, 0);
+    }
   };
 
   applyDimensions();
   window.visualViewport?.addEventListener("resize", applyDimensions);
   window.addEventListener("resize", applyDimensions);
+
+  // Also prevent scrolling on the window itself
+  window.addEventListener("scroll", () => {
+    if (window.scrollY !== 0) {
+      window.scrollTo(0, 0);
+    }
+  }, { passive: false });
 }
 
 (async () => {

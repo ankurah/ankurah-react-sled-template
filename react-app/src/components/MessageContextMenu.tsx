@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useLayoutEffect } from "react";
 import { MessageView, JsValueMut, ctx } from "ankurah-template-wasm-bindings";
 import "./MessageContextMenu.css";
 
@@ -18,6 +18,7 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
     onClose,
 }) => {
     const menuRef = useRef<HTMLDivElement>(null);
+    const [position, setPosition] = useState({ x, y });
 
     const handleEdit = () => {
         editingMessageMut.set(message);
@@ -36,6 +37,37 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
         }
         onClose();
     };
+
+    // Adjust position to prevent menu from going off-screen
+    useLayoutEffect(() => {
+        if (menuRef.current) {
+            const menuRect = menuRef.current.getBoundingClientRect();
+            let adjustedX = x;
+            let adjustedY = y;
+
+            // Check right edge
+            if (x + menuRect.width > window.innerWidth) {
+                adjustedX = window.innerWidth - menuRect.width - 10;
+            }
+
+            // Check bottom edge
+            if (y + menuRect.height > window.innerHeight) {
+                adjustedY = window.innerHeight - menuRect.height - 10;
+            }
+
+            // Check left edge
+            if (adjustedX < 10) {
+                adjustedX = 10;
+            }
+
+            // Check top edge
+            if (adjustedY < 10) {
+                adjustedY = 10;
+            }
+
+            setPosition({ x: adjustedX, y: adjustedY });
+        }
+    }, [x, y]);
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
@@ -63,7 +95,7 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
         <div
             ref={menuRef}
             className="contextMenu"
-            style={{ position: "fixed", left: `${x}px`, top: `${y}px` }}
+            style={{ position: "fixed", left: `${position.x}px`, top: `${position.y}px` }}
         >
             <button
                 className="contextMenuItem"
